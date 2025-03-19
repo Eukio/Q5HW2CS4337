@@ -7,9 +7,7 @@ Professor Karami
 3/23/2025
 
  * 
- TO DO:
- 1. Start by figuring out how to parse #include, check lex() and lookup('#')... Continue this process down each line for each new token
- 2. Tackle parsing for the for loop... look at example while loop 
+ TO DO: FIGURE OUT HOW TO PARSE STRING LITERALS "" CURRENTLY RETURNS EOF AND CAN CAUSE INFINITE LOOP
  */
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -33,12 +31,15 @@ public class Main {
         public static final char ELSE = 77;
         public static final char INCR_OP = 78;
         public static final char DECR_OP = 79;
-        public static final char INCLUDE_STDIO = 82;
+        public static final char HASH = 80;
         public static final char INCLUDE_STR = 81;
+        public static final char INCLUDE_STDIO = 82;
 
         public static final char PRINTF = 83; 
         public static final char FGETS = 84;   
         public static final char PUTS = 85; 
+        public static final char STR_LIT = 86; 
+
 
         public static final char LEFT_PAREN = 40;
         public static final char RIGHT_PAREN = 41;
@@ -80,9 +81,8 @@ public class Main {
             System.exit(1);
         }
 
-        getChar();
-        lex();
         parseProgram();  // start parsing
+    
 
         try {
             inputFile.close(); // close input file
@@ -195,7 +195,7 @@ public class Main {
     public static void getChar() {
         try {
             if ((nextChar = (char) inputFile.read()) != -1) {
-                if (Character.isAlphabetic(nextChar))
+                if (Character.isAlphabetic(nextChar) || nextChar == '#')
                     charClass = Char.LETTER;
                 else if (Character.isDigit(nextChar))
                     charClass = Char.DIGIT;
@@ -209,47 +209,70 @@ public class Main {
     }
 
     public static void getNonBlank() {
-        while (nextChar == ' ')
+        while (nextChar <=32){ //handles spaces & newline
             getChar();
+        }
     }
+    public static void parseProgram() {
+        System.out.println("Enter <program>");
+        getChar();
+        lex();  // Get first token
 
+        while (nextToken != Token.EOF) {
+            if (nextToken == Token.INCLUDE_STDIO || nextToken == Token.INCLUDE_STR) {
+                lex();  // Process include statements
+            } else if (nextToken == Token.IDENT) {
+                parseFunction();  // Process function declaration
+            } else if (nextToken == Token.RIGHT_CURLY) {  // Detects last `}`
+                parseMainFunction();
+                lex(); 
+            } else {
+                error();
+            }
+        System.out.println("Exit <program>");
+        }
+    }
+    public static void addAndLoopToLexeme(){
+        while (charClass == Char.LETTER || charClass == Char.DIGIT) {
+            addCharToN(1);
+        }
+    }
+    public static void addCharToN(int n){
+        for(int i = 0; i < n; i++){
+            addChar();
+            getChar();
+        }
+    }
+    public static void determineHeader(){
+
+ addCharToN(1);
+  if (nextChar == Token.LS_THAN) { // <
+      addCharToN(1); //add <
+     addAndLoopToLexeme();  // Read "stdio.h" or "string.h"
+     addCharToN(3);  //add .h>
+      if (toStringLexeme().equals("#include <stdio.h>")) {
+          nextToken = Token.INCLUDE_STDIO;
+      } else if (toStringLexeme().equals("#include <string.h>")) {
+          nextToken = Token.INCLUDE_STR;
+      } else {
+          error();
+      }
+  }
+    }
     public static char lex() {
         lexLen = 0;
         getNonBlank();
         switch (charClass) {
             case Char.LETTER:
-                addChar();
-                getChar();
-                while (charClass == Char.LETTER || charClass == Char.DIGIT) {
-                    addChar();
-                    getChar();
-                }
-
-            /*if(lexeme[0] == '#' && lexeme[1] == 'i' && lexeme[2] == 'n' && lexeme[3] == 'c' && lexeme[4] == 'l' &&  lexeme[5] == 'u'  && lexeme[6] == 'd'  && lexeme[7] == 'e' && lexLen == 8)  
-			nextToken = Token.WHILE; //TO DO: Add Lexemes, FIND WAY TO CHECK # is a letter
-            else if(lexeme[0] == '#' && lexeme[1] == 'i' && lexeme[2] == 'n' && lexeme[3] == 'c' && lexeme[4] == 'l' &&  lexeme[5] == 'u'  && lexeme[6] == 'd'  && lexeme[7] == 'e' && lexLen == 8)  
-			nextToken = Token.WHILE;*/
+                
+                addCharToN(1);
+                addAndLoopToLexeme();
 
             // handling #include
              if (lexeme[0] == '#' && lexeme[1] == 'i' && lexeme[2] == 'n' && lexeme[3] == 'c' &&
                 lexeme[4] == 'l' && lexeme[5] == 'u' && lexeme[6] == 'd' && lexeme[7] == 'e' && lexLen == 8) {
-                
-                nextToken = Token.INCLUDE_STDIO;  // Temporary assignment
-
-                lex(); 
-                if (nextToken == Token.LS_THAN) { // <
-                    lex();  // Read "stdio.h" or "string.h"
-
-                    if (toStringLexeme().equals("stdio.h")) {
-                        nextToken = Token.INCLUDE_STDIO;
-                    } else if (toStringLexeme().equals("string.h")) {
-                        nextToken = Token.INCLUDE_STR;
-                    } else {
-                        error();
-                    }
-                    
-                    lex();  
-                }
+                    determineHeader();
+                    getChar();
             } 
 
             // adding input output statements
@@ -346,24 +369,6 @@ public class Main {
         System.exit(1);
     }
 
-    public static void parseProgram() {
-        System.out.println("Enter <program>");
-        lex();  // Get first token
-
-        while (nextToken != Token.EOF) {
-            if (nextToken == Token.INCLUDE_STDIO || nextToken == Token.INCLUDE_STR) {
-                lex();  // Process include statements
-            } else if (nextToken == Token.IDENT) {
-                parseFunction();  // Process function declaration
-            } else if (nextToken == Token.INT_LIT) {  // Detects `int main()`
-                parseMainFunction();
-            } else {
-                error();
-            }
-        System.out.println("Exit <program>");
-        }
-    }
-
     public static void parseFunction() {
         System.out.println("Enter <function>");
         lex(); // void
@@ -385,7 +390,7 @@ public class Main {
         lex(); // (
         lex(); // )
         lex(); // {
-        while (nextToken != Token.RIGHT_CURLY) { // Read function body
+        while (nextToken != Token.RIGHT_CURLY && nextToken != Token.EOF) { // Read function body
             if (nextToken == Token.FGETS || nextToken == Token.PRINTF || nextToken == Token.PUTS) {
                 parseIOStmt();  // Handles fgets, printf, puts
             } else {
