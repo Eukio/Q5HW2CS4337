@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "Q5Assignment2",
+			"path": "."
+		},
+		{
+			"name": "Question5Example",
+			"path": "../Question5Example"
+		}
+	],
+	"settings": {
+		"java.project.sourcePaths": []
+	}
+}
