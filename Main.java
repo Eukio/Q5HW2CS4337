@@ -8,6 +8,7 @@ Professor Karami
 
  * 
  TO DO: FIGURE OUT HOW TO PARSE STRING LITERALS "" CURRENTLY RETURNS EOF AND CAN CAUSE INFINITE LOOP
+ Alishba- modifying getChar()- when we detect " call a function to process full string
  */
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -16,57 +17,53 @@ import java.io.IOException;
 import java.util.*;
 
 public class Main {
-    public static class Char {
-        public static final char LETTER = 65;
-        public static final char DIGIT = 66;
-        public static final char UNKNOWN = 67;
-        public static final char EOF = 101;
+    enum Char {
+        LETTER,
+        DIGIT,
+        UNKNOWN,
+        EOF
     }
 
-    public static class Token { // Somewhat similar to ascii values
-        public static final char IDENT = 73;
-        public static final char INT_LIT = 74;
-        public static final char FOR = 75;
-        public static final char IF = 76;
-        public static final char ELSE = 77;
-        public static final char INCR_OP = 78;
-        public static final char DECR_OP = 79;
-        public static final char HASH = 80;
-        public static final char INCLUDE_STR = 81;
-        public static final char INCLUDE_STDIO = 82;
+    enum Token { // Somewhat similar to ascii values
+        IDENT,
+        INT_LIT,
+        FOR,
+        IF,
+        ELSE,
+        INCR_OP,
+        DECR_OP,
+        HASH,
+        INCLUDE_STR,
+        INCLUDE_STDIO,
+        PRINTF,
+        FGETS,
+        PUTS,
+        STR_LIT,
+        LEFT_PAREN,
+        RIGHT_PAREN,
+        MULT_OP,
+        ADD_OP,
+        SUB_OP,
+        DIV_OP,
 
-        public static final char PRINTF = 83; 
-        public static final char FGETS = 84;   
-        public static final char PUTS = 85; 
-        public static final char STR_LIT = 86; 
+        EQ_TO,
+        LS_THAN,
+        ASSIGN_OP,
+        GR_THAN,
+        GR_EQ_THAN,
+        LS_EQ_THAN,
+        COMMA,
 
-
-        public static final char LEFT_PAREN = 40;
-        public static final char RIGHT_PAREN = 41;
-        public static final char MULT_OP = 42;
-        public static final char ADD_OP = 43;
-        public static final char SUB_OP = 45;
-        public static final char DIV_OP = 47;
-
-        public static final char EQ_TO = 58;
-        public static final char LS_THAN = 60;
-        public static final char ASSIGN_OP = 61;
-        public static final char GR_THAN = 62;
-        public static final char GR_EQ_THAN = 63;
-        public static final char LS_EQ_THAN = 64;
-        public static final char COMMA = 44;
-
-        public static final char NEGATION = 33;
-        public static final char SEMICOLON = 59;
-        public static final char LEFT_CURLY = 123;
-        public static final char RIGHT_CURLY = 125;
-
-        public static final char EOF = 101;
+        NEGATION,
+        SEMICOLON,
+        LEFT_CURLY,
+        RIGHT_CURLY,
+        EOF
     }
 
     public static final String FILEPATH = "program.txt";
-    public static char nextToken;
-    public static char charClass;
+    public static Token nextToken;
+    public static Char charClass;
     public static char nextChar;
     public static int lexLen = 0;
     public static char[] lexeme = new char[100];
@@ -81,8 +78,7 @@ public class Main {
             System.exit(1);
         }
 
-        parseProgram();  // start parsing
-    
+        parseProgram(); // start parsing
 
         try {
             inputFile.close(); // close input file
@@ -92,97 +88,97 @@ public class Main {
     }
 
     // Lookup function for operators and parentheses, return token
-    public static char lookup(char ch) {
+    public static Token lookup(char ch) {
         switch (ch) {
-                case '(':
+            case '(':
+                addChar();
+                nextToken = Token.LEFT_PAREN;
+                break;
+            case ')':
+                addChar();
+                nextToken = Token.RIGHT_PAREN;
+                break;
+            case '{':
+                addChar();
+                nextToken = Token.LEFT_CURLY;
+                break;
+            case '}':
+                addChar();
+                nextToken = Token.RIGHT_CURLY;
+                break;
+            case ';':
+                addChar();
+                nextToken = Token.SEMICOLON;
+                break;
+            case '+':
+                addChar();
+                nextToken = Token.ADD_OP;
+                break;
+            case '-':
+                addChar();
+                nextToken = Token.SUB_OP;
+                break;
+            case '*':
+                addChar();
+                nextToken = Token.MULT_OP;
+                break;
+            case '/':
+                addChar();
+                nextToken = Token.DIV_OP;
+                break;
+            case '=':
+                addChar();
+                if (peek() == '=') { // Check for ==
+                    getChar();
                     addChar();
-                    nextToken = Token.LEFT_PAREN;
-                    break;
-                case ')':
+                    nextToken = Token.EQ_TO;
+                } else {
+                    nextToken = Token.ASSIGN_OP;
+                }
+                break;
+            case '<':
+                addChar();
+                if (peek() == '=') { // Check for <=
+                    getChar();
                     addChar();
-                    nextToken = Token.RIGHT_PAREN;
-                    break;
-                case '{':
+                    nextToken = Token.LS_EQ_THAN;
+                } else {
+                    nextToken = Token.LS_THAN;
+                }
+                break;
+            case '>':
+                addChar();
+                if (peek() == '=') { // Check for >=
+                    getChar();
                     addChar();
-                    nextToken = Token.LEFT_CURLY;
-                    break;
-                case '}':
-                    addChar();
-                    nextToken = Token.RIGHT_CURLY;
-                    break;
-                case ';':
-                    addChar();
-                    nextToken = Token.SEMICOLON;
-                    break;
-                case '+':
-                    addChar();
-                    nextToken = Token.ADD_OP;
-                    break;
-                case '-':
-                    addChar();
-                    nextToken = Token.SUB_OP;
-                    break;
-                case '*':
-                    addChar();
-                    nextToken = Token.MULT_OP;
-                    break;
-                case '/':
-                    addChar();
-                    nextToken = Token.DIV_OP;
-                    break;
-                case '=':
-                    addChar();
-                    if (peek() == '=') { // Check for ==
-                        getChar();
-                        addChar();
-                        nextToken = Token.EQ_TO;
-                    } else {
-                        nextToken = Token.ASSIGN_OP;
-                    }
-                    break;
-                case '<':
-                    addChar();
-                    if (peek() == '=') { // Check for <=
-                        getChar();
-                        addChar();
-                        nextToken = Token.LS_EQ_THAN;
-                    } else {
-                        nextToken = Token.LS_THAN;
-                    }
-                    break;
-                case '>':
-                    addChar();
-                    if (peek() == '=') { // Check for >=
-                        getChar();
-                        addChar();
-                        nextToken = Token.GR_EQ_THAN;
-                    } else {
-                        nextToken = Token.GR_THAN;
-                    }
-                    break;
-                default:
-                    addChar();
-                    nextToken = Token.EOF;
-                    break;
-            }
-    return nextToken;
+                    nextToken = Token.GR_EQ_THAN;
+                } else {
+                    nextToken = Token.GR_THAN;
+                }
+                break;
+            default:
+                addChar();
+                nextToken = Token.EOF;
+                break;
+        }
+        return nextToken;
     }
 
     public static char peek() {
-    try {
-        // Temporarily store the current position in the input file
-        long currentPosition = inputFile.skip(0); // get current position (don't move forward)
+        try {
+            // Temporarily store the current position in the input file
+            long currentPosition = inputFile.skip(0); // get current position (don't move forward)
 
-        // Look at the next character
-        char next = (char) inputFile.read();
-        inputFile.skip(currentPosition); // return to the original position
+            // Look at the next character
+            char next = (char) inputFile.read();
+            inputFile.skip(currentPosition); // return to the original position
 
-        return next;
-    } catch (IOException e) {
-        e.printStackTrace();
-        return (char) -1; // return EOF if something goes wrong
+            return next;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return (char) -1; // return EOF if something goes wrong
+        }
     }
-}
 
     public static void addChar() {
         if (lexLen <= 98) {
@@ -199,7 +195,12 @@ public class Main {
                     charClass = Char.LETTER;
                 else if (Character.isDigit(nextChar))
                     charClass = Char.DIGIT;
-                else
+                else if (nextChar == '\"') { // detects string literals
+                    // addChar();
+                    // nextToken = Token.LEFT_PAREN;
+                    parseStringLiteral();
+                    return;
+                } else
                     charClass = Char.UNKNOWN;
             } else
                 charClass = Char.EOF;
@@ -208,90 +209,123 @@ public class Main {
         }
     }
 
+    public static void parseStringLiteral() {
+        lexLen = 0; // Reset lexeme length
+        addChar(); // Add the first quote to lexeme
+
+        try {
+            while (true) {
+                nextChar = (char) inputFile.read();
+                if (nextChar == '\"') {
+                    addChar(); // Add closing quote
+                    break; // End of string
+                } else if (nextChar == (char) -1) {
+                    System.out.println("Error - Unclosed string literal");
+                    nextToken = Token.EOF;
+                    return;
+                }
+                addChar();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        nextToken = Token.STR_LIT; // Set token type for string literals
+    }
+
     public static void getNonBlank() {
-        while (nextChar <=32){ //handles spaces & newline
+        while (nextChar <= 32) { // handles spaces & newline
             getChar();
         }
     }
+
     public static void parseProgram() {
         System.out.println("Enter <program>");
         getChar();
-        lex();  // Get first token
+        lex(); // Get first token
 
         while (nextToken != Token.EOF) {
             if (nextToken == Token.INCLUDE_STDIO || nextToken == Token.INCLUDE_STR) {
-                lex();  // Process include statements
+                lex(); // Process include statements
             } else if (nextToken == Token.IDENT) {
-                parseFunction();  // Process function declaration
-            } else if (nextToken == Token.RIGHT_CURLY) {  // Detects last `}`
+                parseFunction(); // Process function declaration
+            } else if (nextToken == Token.RIGHT_CURLY) { // Detects last `}`
                 parseMainFunction();
-                lex(); 
+                lex();
             } else {
                 error();
             }
-        System.out.println("Exit <program>");
+            System.out.println("Exit <program>");
         }
     }
-    public static void addAndLoopToLexeme(){
+
+    public static void addAndLoopToLexeme() {
         while (charClass == Char.LETTER || charClass == Char.DIGIT) {
             addCharToN(1);
         }
     }
-    public static void addCharToN(int n){
-        for(int i = 0; i < n; i++){
+
+    public static void addCharToN(int n) {
+        for (int i = 0; i < n; i++) {
             addChar();
             getChar();
         }
     }
-    public static void determineHeader(){
 
- addCharToN(1);
-  if (nextChar == Token.LS_THAN) { // <
-      addCharToN(1); //add <
-     addAndLoopToLexeme();  // Read "stdio.h" or "string.h"
-     addCharToN(3);  //add .h>
-      if (toStringLexeme().equals("#include <stdio.h>")) {
-          nextToken = Token.INCLUDE_STDIO;
-      } else if (toStringLexeme().equals("#include <string.h>")) {
-          nextToken = Token.INCLUDE_STR;
-      } else {
-          error();
-      }
-  }
+    public static void determineHeader() {
+
+        addCharToN(1);
+        if (nextChar == '<') { // <
+            addCharToN(1); // add <
+            addAndLoopToLexeme(); // Read "stdio.h" or "string.h"
+            addCharToN(3); // add .h>
+            if (toStringLexeme().equals("#include <stdio.h>")) {
+                nextToken = Token.INCLUDE_STDIO;
+            } else if (toStringLexeme().equals("#include <string.h>")) {
+                nextToken = Token.INCLUDE_STR;
+            } else {
+                error();
+            }
+        }
     }
-    public static char lex() {
+
+    public static Token lex() {
         lexLen = 0;
         getNonBlank();
         switch (charClass) {
-            case Char.LETTER:
-                
+            case LETTER:
+
                 addCharToN(1);
                 addAndLoopToLexeme();
 
-            // handling #include
-             if (lexeme[0] == '#' && lexeme[1] == 'i' && lexeme[2] == 'n' && lexeme[3] == 'c' &&
-                lexeme[4] == 'l' && lexeme[5] == 'u' && lexeme[6] == 'd' && lexeme[7] == 'e' && lexLen == 8) {
+                // handling #include
+                if (lexeme[0] == '#' && lexeme[1] == 'i' && lexeme[2] == 'n' && lexeme[3] == 'c' &&
+                        lexeme[4] == 'l' && lexeme[5] == 'u' && lexeme[6] == 'd' && lexeme[7] == 'e' && lexLen == 8) {
                     determineHeader();
                     getChar();
-            } 
+                }
 
-            // adding input output statements
-            else if(lexeme[0] == 'f' && lexeme[1] == 'o' && lexeme[2] == 'r' && lexLen == 3) 
-				nextToken = Token.FOR;
-			else if(lexeme[0] == 'i' && lexeme[1] == 'f' && lexLen == 2) // check for if
-				nextToken = Token.IF;
-			else if(lexeme[0] == 'e' && lexeme[1] == 'l' && lexeme[2] == 's' && lexeme[3] == 'e' && lexLen == 4) // check for else
-				nextToken = Token.ELSE;
-            else if (lexeme[0] == 'p' && lexeme[1] == 'r' && lexeme[2] == 'i' && lexeme[3] == 'n' && lexeme[4] == 't' && lexeme[5] == 'f' && lexLen == 6) 
-                nextToken = Token.PRINTF;
-            else if (lexeme[0] == 'f' && lexeme[1] == 'g' && lexeme[2] == 'e' && lexeme[3] == 't' && lexeme[4] == 's' && lexLen == 5) 
-                nextToken = Token.FGETS;
-            else if (lexeme[0] == 'p' && lexeme[1] == 'u' && lexeme[2] == 't' && lexeme[3] == 's' && lexLen == 4) 
-                nextToken = Token.PUTS;
-			else
-				nextToken = Token.IDENT; 
-			break;
-            case Char.DIGIT:
+                // adding input output statements
+                else if (lexeme[0] == 'f' && lexeme[1] == 'o' && lexeme[2] == 'r' && lexLen == 3)
+                    nextToken = Token.FOR;
+                else if (lexeme[0] == 'i' && lexeme[1] == 'f' && lexLen == 2) // check for if
+                    nextToken = Token.IF;
+                else if (lexeme[0] == 'e' && lexeme[1] == 'l' && lexeme[2] == 's' && lexeme[3] == 'e' && lexLen == 4) // check
+                                                                                                                      // for
+                                                                                                                      // else
+                    nextToken = Token.ELSE;
+                else if (lexeme[0] == 'p' && lexeme[1] == 'r' && lexeme[2] == 'i' && lexeme[3] == 'n'
+                        && lexeme[4] == 't' && lexeme[5] == 'f' && lexLen == 6)
+                    nextToken = Token.PRINTF;
+                else if (lexeme[0] == 'f' && lexeme[1] == 'g' && lexeme[2] == 'e' && lexeme[3] == 't'
+                        && lexeme[4] == 's' && lexLen == 5)
+                    nextToken = Token.FGETS;
+                else if (lexeme[0] == 'p' && lexeme[1] == 'u' && lexeme[2] == 't' && lexeme[3] == 's' && lexLen == 4)
+                    nextToken = Token.PUTS;
+                else
+                    nextToken = Token.IDENT;
+                break;
+            case DIGIT:
                 addChar();
                 getChar();
                 while (charClass == Char.DIGIT) {
@@ -300,12 +334,12 @@ public class Main {
                 }
                 nextToken = Token.INT_LIT;
                 break;
-            case Char.UNKNOWN:
+            case UNKNOWN:
                 lookup(nextChar);
                 getChar();
                 break;
-                
-            case Char.EOF:
+
+            case EOF:
                 nextToken = Token.EOF;
                 lexeme[0] = 'E';
                 lexeme[1] = '0';
@@ -313,7 +347,7 @@ public class Main {
                 lexeme[3] = 0;
                 break;
         }
-        System.out.println("Next token is: " + ((int) nextToken) + ", Next lexeme is " + toStringLexeme());
+        System.out.println("Next token is: " + nextToken + ", Next lexeme is " + toStringLexeme());
 
         return nextToken;
     }
@@ -392,10 +426,11 @@ public class Main {
         lex(); // {
         while (nextToken != Token.RIGHT_CURLY && nextToken != Token.EOF) { // Read function body
             if (nextToken == Token.FGETS || nextToken == Token.PRINTF || nextToken == Token.PUTS) {
-                parseIOStmt();  // Handles fgets, printf, puts
+                parseIOStmt(); // Handles fgets, printf, puts
             } else {
-            parseStatements();
+                parseStatements();
             }
+            lex();
         }
         lex(); // }
         System.out.println("Exit <mainFunction>");
@@ -417,8 +452,8 @@ public class Main {
         System.out.println("Enter <ioStmt>");
         lex(); // printf, fgets, or puts
         lex(); // (
-    
-        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT) {
+
+        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT || nextToken == Token.STR_LIT) {
             lex(); // Process input or number
         }
 
@@ -431,7 +466,6 @@ public class Main {
         lex(); // ;
         System.out.println("Exit <ioStmt>");
     }
-
 
     public static void parseLoop() {
         System.out.println("Enter <loop>");
