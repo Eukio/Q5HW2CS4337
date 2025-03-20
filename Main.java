@@ -45,7 +45,8 @@ public class Main {
         ADD_OP,
         SUB_OP,
         DIV_OP,
-
+        LEFT_BRACKET,
+        RIGHT_BRACKET,
         EQ_TO,
         LS_THAN,
         ASSIGN_OP,
@@ -53,11 +54,12 @@ public class Main {
         GR_EQ_THAN,
         LS_EQ_THAN,
         COMMA,
-
         NEGATION,
         SEMICOLON,
         LEFT_CURLY,
         RIGHT_CURLY,
+        QUOTATION,
+        RETURN,
         EOF
     }
 
@@ -106,9 +108,25 @@ public class Main {
                 addChar();
                 nextToken = Token.RIGHT_CURLY;
                 break;
+                case '[':
+                addChar();
+                nextToken = Token.LEFT_BRACKET;
+                break;
+                case ']':
+                addChar();
+                nextToken = Token.RIGHT_BRACKET;
+                break;
+                case ',':
+                addChar();
+                nextToken = Token.COMMA;
+                break;
             case ';':
                 addChar();
                 nextToken = Token.SEMICOLON;
+                break;
+                case '"':
+                addChar();
+                nextToken = Token.QUOTATION;
                 break;
             case '+':
                 addChar();
@@ -195,12 +213,14 @@ public class Main {
                     charClass = Char.LETTER;
                 else if (Character.isDigit(nextChar))
                     charClass = Char.DIGIT;
-                else if (nextChar == '\"') { // detects string literals
+              //  else if (nextChar == '\"') { // detects string literals
                     // addChar();
                     // nextToken = Token.LEFT_PAREN;
-                    parseStringLiteral();
-                    return;
-                } else
+              //     lex();
+                //    parseStringLiteral();
+                    //return;
+              //  }
+                 else
                     charClass = Char.UNKNOWN;
             } else
                 charClass = Char.EOF;
@@ -229,8 +249,9 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         nextToken = Token.STR_LIT; // Set token type for string literals
+        System.out.println("Next token is: " + nextToken + ", Next lexeme is " + toStringLexeme());
+     getChar(); 
     }
 
     public static void getNonBlank() {
@@ -251,7 +272,7 @@ public class Main {
                 parseFunction(); // Process function declaration
             } else if (nextToken == Token.RIGHT_CURLY) { // Detects last `}`
                 parseMainFunction();
-                lex();
+                nextToken = Token.EOF;
             } else {
                 error();
             }
@@ -322,6 +343,10 @@ public class Main {
                     nextToken = Token.FGETS;
                 else if (lexeme[0] == 'p' && lexeme[1] == 'u' && lexeme[2] == 't' && lexeme[3] == 's' && lexLen == 4)
                     nextToken = Token.PUTS;
+                else if (lexeme[0] == 'r' && lexeme[1] == 'e' && lexeme[2] == 't' && lexeme[3] == 'u' &&
+                    lexeme[4] == 'r' && lexeme[5] == 'n' && lexLen == 6) {
+                        nextToken = Token.RETURN;
+            }
                 else
                     nextToken = Token.IDENT;
                 break;
@@ -335,7 +360,7 @@ public class Main {
                 nextToken = Token.INT_LIT;
                 break;
             case UNKNOWN:
-                lookup(nextChar);
+                nextToken = lookup(nextChar);
                 getChar();
                 break;
 
@@ -347,6 +372,7 @@ public class Main {
                 lexeme[3] = 0;
                 break;
         }
+        if(nextToken != Token.EOF)
         System.out.println("Next token is: " + nextToken + ", Next lexeme is " + toStringLexeme());
 
         return nextToken;
@@ -410,7 +436,7 @@ public class Main {
         lex(); // (
         lex(); // )
         lex(); // {
-        while (nextToken != Token.RIGHT_CURLY) { // Read function body
+        while (nextToken != Token.RIGHT_CURLY &&  nextToken != Token.EOF) { // Read function body
             parseStatements();
         }
         lex(); // }
@@ -425,14 +451,8 @@ public class Main {
         lex(); // )
         lex(); // {
         while (nextToken != Token.RIGHT_CURLY && nextToken != Token.EOF) { // Read function body
-            if (nextToken == Token.FGETS || nextToken == Token.PRINTF || nextToken == Token.PUTS) {
-                parseIOStmt(); // Handles fgets, printf, puts
-            } else {
                 parseStatements();
-            }
-            lex();
         }
-        lex(); // }
         System.out.println("Exit <mainFunction>");
     }
 
@@ -443,17 +463,27 @@ public class Main {
             parseIfStmt();
         } else if (nextToken == Token.PRINTF || nextToken == Token.FGETS || nextToken == Token.PUTS) {
             parseIOStmt();
-        } else {
-            parseAssign();
+        } else if(nextToken == Token.IDENT) {
+        parseAssign(); 
+          }
+        else{
+            lex();
         }
     }
 
     public static void parseIOStmt() {
         System.out.println("Enter <ioStmt>");
-        lex(); // printf, fgets, or puts
-        lex(); // (
+        //lex(); // printf, fgets, or puts
+        //addCharToN(1);
+      //  getChar();
+      //  addChar();
+   //   lex();
+       lex(); // (
+       if(nextChar == '"')
+        parseStringLiteral();
 
-        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT || nextToken == Token.STR_LIT) {
+
+        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT) {
             lex(); // Process input or number
         }
 
@@ -461,7 +491,6 @@ public class Main {
             lex();
             lex(); // Next argument
         }
-
         lex(); // )
         lex(); // ;
         System.out.println("Exit <ioStmt>");
@@ -498,6 +527,7 @@ public class Main {
 
     public static void parseAssign() {
         System.out.println("Enter <assign>");
+        getChar();
         lex(); // Identifier
         lex(); // =
         lex(); // Expression
