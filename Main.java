@@ -60,6 +60,8 @@ public class Main {
         RIGHT_CURLY,
         QUOTATION,
         RETURN,
+        VOID,
+        TYPE,
         EOF
     }
 
@@ -266,19 +268,88 @@ public class Main {
         lex(); // Get first token
 
         while (nextToken != Token.EOF) {
-            if (nextToken == Token.INCLUDE_STDIO || nextToken == Token.INCLUDE_STR) {
-                lex(); // Process include statements
-            } else if (nextToken == Token.IDENT) {
+             if (nextToken == Token.INCLUDE_STDIO || nextToken == Token.INCLUDE_STR) {
+             lex(); // Process include statements 
+             } 
+             else if (nextToken == Token.VOID) {
                 parseFunction(); // Process function declaration
-            } else if (nextToken == Token.RIGHT_CURLY) { // Detects last `}`
                 parseMainFunction();
                 nextToken = Token.EOF;
-            } else {
-                error();
             }
-            System.out.println("Exit <program>");
+              else if (nextToken == Token.TYPE) {  
+                parseDefineVar();
+            } 
+            else {
+               lex();
+                //error();
+            }
         }
+            
+        System.out.println("Exit <program>");
+        
     }
+
+    // NEW- processing global variable
+    public static void parseGlobalVariable() {
+        System.out.println("Enter <global variable>");
+      //  lex(); //variable name
+        while(nextToken != Token.SEMICOLON)
+        lex();
+        lex();
+       /*  if (nextToken == Token.IDENT) {
+            lex(); // [
+        } else {
+            error(); // If no valid identifier, it's a syntax error
+            return;
+        }
+
+        // Check if it's an array declaration (e.g., input[100])
+        if (nextToken == Token.LEFT_BRACKET) {
+            lex(); //literal
+
+            // Ensure it's a number (e.g., '100')
+            if (nextToken == Token.INT_LIT) {
+                lex(); // ]
+            } else {
+                error(); // Expected array size
+                return;
+            }
+
+            // Expect closing ']'
+            if (nextToken == Token.RIGHT_BRACKET) {
+                lex(); // ;
+            } else {
+                error(); // Expected closing bracket
+                return;
+            }
+        }
+
+        // // Expect ';' to end the statement
+        // if (nextToken == Token.SEMICOLON) { 
+        //     lex(); // Consume ';'
+        // } else {
+        //     error(); // Missing semicolon
+        //     return;
+        // }
+*/
+        System.out.println("Exit <global variable>");
+    }
+
+    public static void parseDefineVar() {
+        System.out.println("Enter <defineVar>");
+        getChar();
+        lex();
+        while(nextToken != Token.SEMICOLON)
+        lex();
+
+        //lex(); // Identifier
+        //lex(); // =
+        //lex(); // Expression
+        //lex(); // ;
+        System.out.println("Exit <defineVar>");
+    }
+
+
 
     public static void addAndLoopToLexeme() {
         while (charClass == Char.LETTER || charClass == Char.DIGIT) {
@@ -346,8 +417,15 @@ public class Main {
                 else if (lexeme[0] == 'r' && lexeme[1] == 'e' && lexeme[2] == 't' && lexeme[3] == 'u' &&
                     lexeme[4] == 'r' && lexeme[5] == 'n' && lexLen == 6) {
                         nextToken = Token.RETURN;
-            }
-                else
+                }
+                else if (lexeme[0] == 'v' && lexeme[1] == 'o' && lexeme[2] == 'i' && lexeme[3] == 'd' && lexLen == 4) {
+                    nextToken = Token.VOID;
+                }
+                else if ((lexeme[0] == 'i' && lexeme[1] == 'n' && lexeme[2] == 't' && lexLen == 3 )|| (lexeme[0] == 'c' && lexeme[1] == 'h' && lexeme[2] == 'a' && lexeme[3] == 'r' && lexLen == 4 )) {
+                    nextToken = Token.TYPE;
+                }
+                
+                 else
                     nextToken = Token.IDENT;
                 break;
             case DIGIT:
@@ -408,7 +486,7 @@ public class Main {
 
     public void factor() {
         System.out.println("Enter <factor>");
-        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT)
+        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT || nextToken == Token.TYPE)
             lex();
         else {
             if (nextToken == Token.LEFT_PAREN) {
@@ -436,7 +514,7 @@ public class Main {
         lex(); // (
         lex(); // )
         lex(); // {
-        while (nextToken != Token.RIGHT_CURLY &&  nextToken != Token.EOF) { // Read function body
+        while (nextToken != Token.RIGHT_CURLY) { // Read function body
             parseStatements();
         }
         lex(); // }
@@ -463,10 +541,9 @@ public class Main {
             parseIfStmt();
         } else if (nextToken == Token.PRINTF || nextToken == Token.FGETS || nextToken == Token.PUTS) {
             parseIOStmt();
-        } else if(nextToken == Token.IDENT) {
-        parseAssign(); 
-          }
-        else{
+        } else if(nextToken == Token.TYPE) {
+            parseDefineVar(); 
+        } else{
             lex();
         }
     }
@@ -479,31 +556,24 @@ public class Main {
       //  addChar();
    //   lex();
        lex(); // (
-       if(nextChar == '"')
-        parseStringLiteral();
-
-
-        if (nextToken == Token.IDENT || nextToken == Token.INT_LIT) {
-            lex(); // Process input or number
-        }
-
-        while (nextToken == Token.COMMA) { // Handles multiple arguments
-            lex();
-            lex(); // Next argument
-        }
-        lex(); // )
+       if(nextChar == '"') {
+            parseStringLiteral();
+       } 
+        while (nextToken != Token.SEMICOLON)  // Handles multiple arguments
         lex(); // ;
         System.out.println("Exit <ioStmt>");
     }
+
 
     public static void parseLoop() {
         System.out.println("Enter <loop>");
         lex(); // for
         lex(); // (
-        parseAssign(); // i = 0;
+        parseDefineVar(); // i = 0;
         parseCondition(); // i < stringLength
-        lex(); // ;
-        parseAssign(); // i++
+        lex(); // i++
+        lex(); //+
+        lex(); //+
         lex(); // )
         lex(); // {
         while (nextToken != Token.RIGHT_CURLY) { // Process loop body
@@ -516,30 +586,21 @@ public class Main {
     public static void parseIfStmt() {
         System.out.println("Enter <ifStmt>");
         lex(); // if
-        lex(); // (
         parseCondition();
-        lex(); // )
         lex(); // {
-        parseAssign(); // input[j] = temp;
+            parseDefineVar(); 
+            parseDefineVar(); 
+            parseDefineVar(); 
         lex(); // }
         System.out.println("Exit <ifStmt>");
     }
 
-    public static void parseAssign() {
-        System.out.println("Enter <assign>");
-        getChar();
-        lex(); // Identifier
-        lex(); // =
-        lex(); // Expression
-        lex(); // ;
-        System.out.println("Exit <assign>");
-    }
 
     public static void parseCondition() {
         System.out.println("Enter <condition>");
-        lex(); // Identifier
-        lex(); // Operator (> < == !=)
-        lex(); // Identifier
+        lex(); // passby ;
+        while(nextToken != Token.SEMICOLON && nextToken != Token.RIGHT_PAREN )
+        lex();
         System.out.println("Exit <condition>");
     }
 
